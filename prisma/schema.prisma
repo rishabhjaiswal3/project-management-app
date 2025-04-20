@@ -14,17 +14,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
 
 // Necessary for Next auth
 model Account {
@@ -62,7 +51,10 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
+    password      String
+    ownedProjects  Project[]        @relation("UserProjects")
+    teamProjects   ProjectAndTeam[]
+    assignedTasks  TaskAndUser[]
 }
 
 model VerificationToken {
@@ -71,4 +63,64 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+enum ProjectStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  status      ProjectStatus
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownedBy     String
+
+  owner       User     @relation("UserProjects", fields: [ownedBy], references: [id])
+  tasks       Task[]
+  teamMembers ProjectAndTeam[]
+}
+
+model ProjectAndTeam {
+  id         String   @id @default(cuid())
+  projectId  String
+  userId     String
+  
+  project    Project  @relation(fields: [projectId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  projectId   String
+  status      String
+  tags        String[]
+  priority    String?
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  assignees   TaskAndUser[]
+}
+
+model TaskAndUser {
+  id       String  @id @default(cuid())
+  taskId   String
+  userId   String
+  task     Task    @relation(fields: [taskId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
 }
