@@ -1,8 +1,8 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
-
+import CredentialsProvider from "next-auth/providers/credentials"
 import { db } from "@/server/db";
+import bcrypt from "bcryptjs";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -32,7 +32,36 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider,
+      CredentialsProvider({
+        name: "Credentials",
+        credentials: {
+          email: { label: "Email", type: "email" },
+          password: { label: "Password", type: "password" },
+        },
+        async authorize(credentials) {
+          if (!credentials?.email || !credentials?.password) {
+            return null; // If either email or password is missing, return null
+          }
+  
+          // Ensure the findUnique call is properly typed
+          const user = await db.user.findUnique({
+            where: { email: credentials.email as string},
+            select: {  // Explicitly select the fields you need
+              id: true,
+              email: true,
+              name: true,
+            },
+          });
+  
+          // Check if user exists and compare the password
+          if (user && bcrypt.compareSync(credentials?.password as string, (user?.password || "") as string )) {
+            return { id: user.id, email: user.email, name: user.name };
+          }
+          
+  
+          return null; // If credentials are invalid
+        },
+      }),
     /**
      * ...add more providers here.
      *
