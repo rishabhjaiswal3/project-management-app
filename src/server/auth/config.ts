@@ -31,6 +31,9 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+  session: {
+    strategy: "jwt", // Add this to specify the session strategy
+  },
   providers: [
       CredentialsProvider({
         name: "Credentials",
@@ -42,7 +45,7 @@ export const authConfig = {
           if (!credentials?.email || !credentials?.password) {
             return null; // If either email or password is missing, return null
           }
-  
+          
           // Ensure the findUnique call is properly typed
           const user = await db.user.findUnique({
             where: { email: credentials.email as string},
@@ -50,11 +53,13 @@ export const authConfig = {
               id: true,
               email: true,
               name: true,
+              password: true,
             },
           });
   
           // Check if user exists and compare the password
           if (user && bcrypt.compareSync(credentials?.password as string, (user?.password || "") as string )) {
+            console.log("ok ",user);
             return { id: user.id, email: user.email, name: user.name };
           }
           
@@ -74,12 +79,26 @@ export const authConfig = {
   ],
   adapter: PrismaAdapter(db),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    jwt({ token, user }) {
+      console.log("jwt ::: ", token, user);
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
+    session({ session, token }) {
+      console.log("session ::: ", session);
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.id as string,
+          email: token.email as string,
+          name: token.name as string,
+        };
+      }
+      return session;
+    },
   },
 } satisfies NextAuthConfig;

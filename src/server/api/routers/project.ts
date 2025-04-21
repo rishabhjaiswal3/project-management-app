@@ -8,32 +8,41 @@ import {
 
 export const projectRouter = createTRPCRouter({
 
-    createProject: publicProcedure.input(
+    createProject: protectedProcedure.input(
         z.object({
           title: z.string().min(1),
           description: z.string(),
-          status: z.string(),
+          status: z.string(Prisma.ProjectStatus).optional(),
+          members: z.array(z.string()).optional(),
         })
       ).mutation(async ({ ctx, input }) => {
         try {
-            console.log('Received input for creating project:', input); // Log the input data
 
           const { db, session } = ctx;
       
+          console.log(`input status ${JSON.stringify(input)}`);
       
           const newProject = await db.project.create({
             data: {
               title: input.title,
               description: input.description,
-              status: "TODO", // Always sets to "TODO"
+              status: input.status ?? Prisma.ProjectStatus.PENDING, // Always sets to "TODO"
               ownedBy: session?.user.id || null, // Set foreign key
               createdAt: new Date(),
               updatedAt: new Date(),
             } as Prisma.ProjectUncheckedCreateInput,
           });
+  
+          if(input?.members?.length) {
+            const membersToAdd = input.members.map((memberId) => ({
+              userId: memberId,
+              projectId: newProject.id,
+            }));
       
-          console.log('Project created successfully:', newProject); // Log success message
-      
+            await db.projectAndTeam.createMany({
+              data: membersToAdd,
+            });
+          }
           return newProject;
       
         } catch (error) {
@@ -42,44 +51,73 @@ export const projectRouter = createTRPCRouter({
         }
       }),
       
-    updateProject: publicProcedure.input(
+      updateProject: protectedProcedure.input(
         z.object({
-            id: z.string(),
-            title: z.string().min(1),
-            description: z.string(),
-            status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
-            startDate: z.date().optional(),
-            endDate: z.date().optional(),
-        }),
-    ).mutation(async ({ ctx, input }) => {
-        return ctx.db.project.update({
-            where: {
-                id: input.id,
-            },
-            data: {
-                title: input.title,
-                description: input.description,
-                startDate: input.startDate ?? new Date(),
-                endDate: input.endDate ?? new Date(),
-            } as Prisma.ProjectUncheckedUpdateInput,
+          id: z.string(),
+          title: z.string().min(1),
+          description: z.string(),
+          status: z.nativeEnum(Prisma.ProjectStatus).optional(),
+          members: z.array(z.string()).optional(), // List of user IDs
+        })
+      ).mutation(async ({ ctx, input }) => {
+        const { id, members, ...projectData } = input;
+      
+        // Update the project
+        const updatedProject = await ctx.db.project.update({
+          where: {
+            id,
+          },
+          data: {
+            ...projectData,
+            updatedAt: new Date(),
+          },
         });
-    }),
-    getAllProjects: publicProcedure.query(async ({ ctx }) => {
-        // console.log("my ctx ",ctx.session.user.id);
-        return ctx.db.project.findMany({}) ?? [];
-    }),
-    getProjectById: publicProcedure.input(z.string()).query(async ({ ctx, input }) => {
-        return ctx.db.project.findUnique({
+      
+        // Update the teamMembers relation if members are provided
+        if (members) {
+          // Remove existing team members
+          await ctx.db.projectAndTeam.deleteMany({
             where: {
-                id: input,
+              projectId: id,
             },
-        });
-    }
-    ),
-    deleteProject: publicProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
+          });
+      
+          // Add new team members
+          const membersToAdd = members.map((userId) => ({
+            userId,
+            projectId: id,
+          }));
+      
+          await ctx.db.projectAndTeam.createMany({
+            data: membersToAdd,
+          });
+        }
+      
+        return updatedProject;
+      }),
+      getAllProjects: publicProcedure.query(async ({ ctx }) => {
+        return ctx.db.project.findMany({
+          include: {
+            projectAndTeam: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        }) ?? [];
+      }),
+    deleteProject: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
         return ctx.db.project.delete({
             where: {
                 id: input,
+                owner: ctx.session?.user?.id,
             },
         });
     })

@@ -2,7 +2,6 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { signIn } from "next-auth/react"; 
 
 export const userRouter = createTRPCRouter({
   signup: publicProcedure.input(
@@ -16,13 +15,13 @@ export const userRouter = createTRPCRouter({
     const existingUser = await db.user.findUnique({
       where: { email: input.email },
     });
-
+  
     if (existingUser) {
       throw new Error("User already exists with this email.");
     }
-
+  
     const hashedPassword = await bcrypt.hash(input.password, 10);
-
+  
     const newUser = await db.user.create({
       data: {
         name: input.name,
@@ -30,55 +29,81 @@ export const userRouter = createTRPCRouter({
         password: hashedPassword,
       } as Prisma.UserUncheckedCreateInput,
     });
-
-    const res = await signIn("credentials", {
-      email: input.email,
-      password: input.password,
-      redirect: false, 
-    });
-
-    if (res?.error) {
-      throw new Error("Failed to sign in");
-    }
-
-    return { id: newUser.id, email: newUser.email, name: newUser.name };
-  }),
-  login: publicProcedure.input(
-    z.object({
-      email: z.string().email(),
-      password: z.string(),
-    })
-  ).mutation(async ({ ctx, input }) => {
-    // Login is handled by NextAuth.js
-    const res = await signIn("credentials", {
-      email: input.email,
-      password: input.password,
-      redirect: false,  // Prevent redirecting, handle manually
-    });
-
-    if (res?.error) {
-      throw new Error("Invalid credentials");
-    }
-
-    return { message: "Login successful" };
+  
+    // DO NOT call signIn here
+  
+    return {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+    };
   }),
 
   updateProfile: protectedProcedure.input(
     z.object({
       name: z.string().optional(),
+      password: z.string().min(6).optional(),
       image: z.string().url().optional(),
     })
   ).mutation(async ({ ctx, input }) => {
     const { db, session } = ctx;
+
+    if (!session.user.id) {
+      throw new Error("User not authenticated");
+    }
 
     const updatedUser = await db.user.update({
       where: { id: session.user.id },
       data: {
         name: input.name,
         image: input.image,
+        password: input.password
       },
     });
 
     return { id: updatedUser.id, name: updatedUser.name, image: updatedUser.image };
+  }),
+  getProfile: protectedProcedure.query(async ({ ctx }) => {
+    const { db, session } = ctx;
+
+    if (!session.user.id) {
+      throw new Error("User not authenticated");
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return user;
+  }),
+  getUsersBySearchString: protectedProcedure
+  .input(
+    z.object({
+      searchString: z.string().optional(),     
+  })
+  )
+  .query(async ({ ctx, input }) => {
+    const { db } = ctx;
+
+    const users = await db.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: input.searchString, mode: "insensitive" } }, // Search by name
+          { email: { contains: input.searchString, mode: "insensitive" } }, // Search by email
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    });
+
+    return users;
   }),
 });

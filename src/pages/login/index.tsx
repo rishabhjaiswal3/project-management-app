@@ -1,6 +1,5 @@
-"use client";
-
 import React from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/api";
 type FormData = {
@@ -16,37 +15,44 @@ const Login = () => {
     setError,
   } = useForm<FormData>();
 
-  const login = api.user.login.useMutation();
+  const {data: session} =  useSession();
+  React.useEffect(() => {
+    if (session) {
+      window.location.href = "/projects";
+    }
+  }, [session]);
+
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await login.mutateAsync({
+      const loginRes = await signIn("credentials", {
         email: data.email,
         password: data.password,
+        redirect: false,
       });
-      console.log("my response is ",res);
-      if (res) {
-        // localStorage.setItem("isAuthorized", "true");
-        // console.log("my location is ",res);
-        // window.location.href = "/project";
+      if (loginRes?.error) {
+        setError("email", { message: loginRes.error });
+      } else {
+        window.location.href = "/projects";
+        localStorage.setItem("isAuthorized", "true");
       }
-    } catch(e) {
+    } catch (e) {
       console.error("Error during login:", e);
       setError("email", { message: "Something went wrong!" });
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
+        className="w-full max-w-sm rounded bg-white p-6 shadow-md"
       >
-        <h2 className="text-xl font-bold mb-4 text-center">Login</h2>
+        <h2 className="mb-4 text-center text-xl font-bold">Login</h2>
 
         <input
           type="email"
           placeholder="Email"
-          className="w-full p-2 border rounded mb-2"
+          className="mb-2 w-full rounded border p-2"
           {...register("email", {
             required: "Email is required",
             pattern: {
@@ -56,29 +62,29 @@ const Login = () => {
           })}
         />
         {errors.email && (
-          <p className="text-red-500 text-sm mb-2">{errors.email.message}</p>
+          <p className="mb-2 text-sm text-red-500">{errors.email.message}</p>
         )}
 
         <input
           type="password"
           placeholder="Password"
-          className="w-full p-2 border rounded mb-2"
+          className="mb-2 w-full rounded border p-2"
           {...register("password", {
             required: "Password is required",
           })}
         />
         {errors.password && (
-          <p className="text-red-500 text-sm mb-2">{errors.password.message}</p>
+          <p className="mb-2 text-sm text-red-500">{errors.password.message}</p>
         )}
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+          className="w-full rounded bg-blue-600 py-2 text-white transition hover:bg-blue-700"
         >
           Log In
         </button>
 
-        <p className="text-sm text-center mt-4">
+        <p className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <a href="/signup" className="text-blue-600 hover:underline">
             Sign up here

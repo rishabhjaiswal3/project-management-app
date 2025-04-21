@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/utils/api";
+import {  useSession, signIn } from "next-auth/react";
+import AuthWrapper from "@/wrapper/AuthWrapper";
 type FormData = {
   name: string;
   email: string;
@@ -14,7 +16,14 @@ const Signup = () => {
     formState: { errors },
   } = useForm<FormData>();
 
-  const [error,setError] =  useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { data: session } = useSession();
+  React.useEffect(() => {
+    if (session) {
+      window.location.href = "/projects";
+    }
+  }, []);
 
   const signup = api.user.signup.useMutation();
   const onSubmit = async (data: FormData) => {
@@ -25,8 +34,17 @@ const Signup = () => {
         password: data.password,
       });
       if (res) {
-        localStorage.setItem("isAuthorized", "true");
-        // window.location.href = "/project";
+        const loginRes = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
+        if (loginRes?.error) {
+          setError(loginRes.error ?? "Unknown Error");
+        } else {
+          window.location.href = "/projects";
+          localStorage.setItem("isAuthorized", "true");
+        }
       }
     } catch (err) {
       if (err instanceof Error) {
@@ -36,25 +54,26 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded shadow-md w-full max-w-sm">
+    <AuthWrapper isPublicPage={true}>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-sm rounded bg-white p-6 shadow-md">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <h2 className="text-xl font-bold mb-4 text-center">Sign Up</h2>
+          <h2 className="mb-4 text-center text-xl font-bold">Sign Up</h2>
 
           <input
             type="text"
             placeholder="Name"
-            className="w-full p-2 border rounded mb-2"
+            className="mb-2 w-full rounded border p-2"
             {...register("name", { required: "Name is required" })}
           />
           {errors.name && (
-            <p className="text-red-500 text-sm mb-2">{errors.name.message}</p>
+            <p className="mb-2 text-sm text-red-500">{errors.name.message}</p>
           )}
 
           <input
             type="email"
             placeholder="Email"
-            className="w-full p-2 border rounded mb-2"
+            className="mb-2 w-full rounded border p-2"
             {...register("email", {
               required: "Email is required",
               pattern: {
@@ -64,13 +83,13 @@ const Signup = () => {
             })}
           />
           {errors.email && (
-            <p className="text-red-500 text-sm mb-2">{errors.email.message}</p>
+            <p className="mb-2 text-sm text-red-500">{errors.email.message}</p>
           )}
 
           <input
             type="password"
             placeholder="Password"
-            className="w-full p-2 border rounded mb-2"
+            className="mb-2 w-full rounded border p-2"
             {...register("password", {
               required: "Password is required",
               minLength: {
@@ -80,22 +99,22 @@ const Signup = () => {
             })}
           />
           {errors.password && (
-            <p className="text-red-500 text-sm mb-2">
+            <p className="mb-2 text-sm text-red-500">
               {errors.password.message}
             </p>
           )}
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+            className="w-full rounded bg-green-600 py-2 text-white transition hover:bg-green-700"
           >
             Sign Up
           </button>
         </form>
         {error && (
-          <p className="text-red-500 text-sm mb-2 text-center">{error}</p>
+          <p className="mb-2 text-center text-sm text-red-500">{error}</p>
         )}
-        <p className="text-sm text-center mt-4">
+        <p className="mt-4 text-center text-sm">
           Already have an account?{" "}
           <a href="/login" className="text-blue-600 hover:underline">
             Login here
@@ -103,6 +122,7 @@ const Signup = () => {
         </p>
       </div>
     </div>
+    </AuthWrapper>
   );
 };
 
