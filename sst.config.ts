@@ -1,16 +1,40 @@
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./.sst/platform/config.d.ts" />
+import * as sst from "sst";
 
-export default $config({
-  app(input) {
+export default {
+  config(_input) {
     return {
       name: "project-management-app",
-      removal: input?.stage === "production" ? "retain" : "remove",
-      protect: ["production"].includes(input?.stage),
-      home: "aws",
+      region: "us-east-1",
     };
   },
-  async run() {
-    new sst.aws.Nextjs("MyWeb");
+  stacks(app) {
+    app.stack(async function Site({ stack }) {
+      // Create a VPC
+      const vpc = new sst.aws.Vpc(stack, "MyVpc");
+
+      // Create an ECS Cluster
+      const cluster = new sst.aws.Cluster(stack, "MyCluster", { vpc });
+
+      // Create an S3 Bucket for file uploads
+      const bucket = new sst.aws.Bucket(stack, "MyBucket", {
+        access: "public",
+      });
+
+      // Create a Fargate Service for the T3 Stack app
+      new sst.aws.Service(stack, "MyService", {
+        cluster,
+        loadBalancer: {
+          ports: [{ listen: "80/http", forward: "3000/http" }],
+        },
+        dev: {
+          command: "npm run dev",
+        },
+        link: [bucket], // Link the S3 bucket to the service
+      });
+
+      stack.addOutputs({
+        BucketName: bucket.bucketName,
+      });
+    });
   },
-});
+} satisfies sst.SSTConfig;
