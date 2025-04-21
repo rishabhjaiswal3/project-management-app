@@ -46,8 +46,10 @@ const Profile = () => {
   }, [session?.user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    alert('we are not update image, for that we have to integrate s3 bucket, due to less time we have base64 image , but we are not uploading it')
     e.preventDefault();
-    let data: UserProfile = { name, email, image };
+
+    let data: UserProfile = { name, email, image:'' };
     if (password) {
       data["password"] = password;
     }

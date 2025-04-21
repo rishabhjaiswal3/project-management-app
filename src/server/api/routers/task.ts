@@ -6,6 +6,11 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 
+enum TaskStatus {
+  TODO = "TODO",
+  INPROCESS = "INPROCESS",
+  COMPLETED = "COMPLETED",
+}
 export const taskRouter = createTRPCRouter({
   createTask: protectedProcedure
     .input(
@@ -15,6 +20,7 @@ export const taskRouter = createTRPCRouter({
         description: z.string(),
         tags: z.array(z.string()),
         priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+        status: z.enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]]).optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
       }),
@@ -25,7 +31,7 @@ export const taskRouter = createTRPCRouter({
           title: input.title,
           description: input.description,
           projectId: input.projectId,
-          status: "TODO",
+          status: input.status ?? "TODO",
           tags: input.tags,
           priority: input.priority ?? "LOW",
           startDate: input.startDate ?? new Date(),
@@ -69,21 +75,6 @@ export const taskRouter = createTRPCRouter({
         },
       });
     }),
-
-  getTasksByProjectId: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      return ctx.db.task.findMany({
-        where: {
-          projectId: input.projectId,
-        },
-      });
-    }),
-
   getTaskById: protectedProcedure
     .input(
       z.object({
@@ -121,6 +112,7 @@ export const taskRouter = createTRPCRouter({
         title: z.string().min(1),
         description: z.string(),
         tags: z.array(z.string()),
+        status: z.enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]]).optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
@@ -136,6 +128,7 @@ export const taskRouter = createTRPCRouter({
           description: input.description,
           tags: input.tags,
           priority: input.priority ?? "LOW",
+          status: input.status ?? "TODO",
           startDate: input.startDate ?? new Date(),
           endDate: input.endDate ?? new Date(),
         } as Prisma.TaskUncheckedUpdateInput,
@@ -168,5 +161,28 @@ export const taskRouter = createTRPCRouter({
           status: input.status,
         },
       });
+    }),
+  getTasksByProjectId: publicProcedure
+    .input(z.string().nonempty("Project ID is required"))
+    .query(async ({ ctx, input }) => {
+      const tasks = await ctx.db.task.findMany({
+        where: { projectId: input },
+        include: {
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return tasks;
     }),
 });

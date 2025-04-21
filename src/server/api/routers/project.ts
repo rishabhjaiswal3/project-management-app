@@ -53,36 +53,46 @@ export const projectRouter = createTRPCRouter({
       
       updateProject: protectedProcedure.input(
         z.object({
-          id: z.string(),
-          title: z.string().min(1),
+          id: z.string().nonempty("Project ID is required"),
+          title: z.string().min(1, "Title is required"),
           description: z.string(),
-          status: z.nativeEnum(Prisma.ProjectStatus).optional(),
-          members: z.array(z.string()).optional(), // List of user IDs
+          status:  z.string(Prisma.ProjectStatus).optional(),
+          members: z.array(z.string()).optional(),
         })
       ).mutation(async ({ ctx, input }) => {
         const { id, members, ...projectData } = input;
       
-        // Update the project
-        const updatedProject = await ctx.db.project.update({
-          where: {
-            id,
-          },
-          data: {
-            ...projectData,
-            updatedAt: new Date(),
-          },
+        console.log(" updateProject input", );
+        // Ensure the user is authorized to update the project
+        const project = await ctx.db.project.findUnique({
+          where: { id },
         });
       
-        // Update the teamMembers relation if members are provided
+        if (!project) {
+          throw new Error("Project not found.");
+        }
+      
+        if (project.ownedBy !== ctx.session?.user?.id) {
+          throw new Error("You are not authorized to update this project.");
+        }
+      
+        const data = {
+          ...projectData,
+          updatedAt: new Date(),
+        }
+        console.log("my data is ",data);
+        // Update the project
+        const updatedProject = await ctx.db.project.update({
+          where: { id },
+          data: data,
+        });
+      
+        // Update team members if provided
         if (members) {
-          // Remove existing team members
           await ctx.db.projectAndTeam.deleteMany({
-            where: {
-              projectId: id,
-            },
+            where: { projectId: id },
           });
       
-          // Add new team members
           const membersToAdd = members.map((userId) => ({
             userId,
             projectId: id,
@@ -96,9 +106,9 @@ export const projectRouter = createTRPCRouter({
         return updatedProject;
       }),
       getAllProjects: publicProcedure.query(async ({ ctx }) => {
-        return ctx.db.project.findMany({
+        const projects = await ctx.db.project.findMany({
           include: {
-            teamMembers: { // Use the correct relation name from your schema
+            teamMembers: {
               include: {
                 user: {
                   select: {
@@ -111,14 +121,36 @@ export const projectRouter = createTRPCRouter({
               },
             },
           },
-        }) ?? [];
-      }),
-    deleteProject: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
-        return ctx.db.project.delete({
-            where: {
-                id: input,
-                owner: ctx.session?.user?.id,
-            },
         });
-    })
+      
+        return projects.map((project) => ({
+          ...project,
+          teamMembers: project.teamMembers.map((teamMember) => teamMember.user),
+        }));
+      }),
+      deleteProject: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
+        const { db, session } = ctx;
+      
+        // Ensure the user is authorized to delete the project
+        const project = await db.project.findUnique({
+          where: {
+            id: input, // `input` is the project ID
+          },
+        });
+      
+        if (!project) {
+          throw new Error("Project not found.");
+        }
+      
+        if (project.ownedBy !== session?.user?.id) {
+          throw new Error("You are not authorized to delete this project.");
+        }
+      
+        // Delete the project
+        return db.project.delete({
+          where: {
+            id: input,
+          },
+        });
+      }),
 });

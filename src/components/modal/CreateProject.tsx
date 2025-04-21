@@ -16,6 +16,7 @@ interface CreateProjectProps {
     description: string;
     status: string;
   };
+  isEditMode?: boolean;
   setNewProject: React.Dispatch<
     React.SetStateAction<{
       title: string;
@@ -36,12 +37,13 @@ const CreateProject: React.FC<CreateProjectProps> = ({
   handleCreateProject,
   selectedUsers,
   setSelectedUsers,
+  isEditMode = false
 }) => {
   return (
-    <div className="bg-opacity-50 fixed inset-0 flex items-center justify-center bg-black">
+    <div className="bg-opacity-50 fixed inset-0 flex items-center justify-center bg-black z-50">
       <div className="m-2 h-[660px] w-[660px] overflow-hidden rounded bg-white shadow-lg">
         <img
-          className="z-10 h-60 w-full object-cover"
+          className="z-100 h-60 w-full object-cover"
           src="project_bg.jpg"
           alt="Project"
         />
@@ -82,11 +84,11 @@ const CreateProject: React.FC<CreateProjectProps> = ({
           </select>
           <div className="flex justify-end space-x-2">
             <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateProject}>Create</Button>
+            <Button onClick={handleCreateProject}>{isEditMode?"Update":"Create"}</Button>
           </div>
         </div>
       </div>
-      <div className="z-0 h-[660px] w-80 rounded bg-white">
+      <div className="z-100 h-[660px] w-80 rounded bg-white">
         <AddMember
           selectedUsers={selectedUsers}
           setSelectedUsers={setSelectedUsers}

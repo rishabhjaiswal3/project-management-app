@@ -54,59 +54,95 @@ const AddMember: React.FC<AddMemberProps> = ({
 
   return (
     <div>
-      <p className="bold display-flex p-2 text-center text-xl text-blue-600">
-        Add Team Members
-      </p>
 
-      <form className="mx-auto max-w-md">
-        <label className="sr-only mb-2 text-sm font-medium text-gray-900 dark:text-white">
-          Search
-        </label>
-        <div className="relative">
-          <input
-            type="search"
-            id="default-search"
-            className="block w-full rounded-lg border border-gray-300 p-2 ps-2 text-sm text-gray-900"
-            placeholder="Search Users"
-            value={searchString}
-            onChange={(e) => setSearchString(e.target.value)}
-          />
-        </div>
-      </form>
-      <div className="mt-4 px-4">
-        {isSearching ? (
-          <p>Searching...</p>
-        ) : searchResults.length > 0 ? (
-          <ul>
-            {searchResults.map((user: User) => {
-              return (
-                <li
-                  key={user.id}
-                  className={`mb-2 flex cursor-pointer items-center space-x-2 border-b pb-2 ${
-                    selectedUsers.some((selected) => selected.id === user.id)
-                      ? "bg-blue-100"
-                      : ""
-                  }`}
-                  onClick={() => toggleUserSelection(user)}
-                >
-                  <img
-                    src={user.image || "/profile.webp"}
-                    alt={user.name}
-                    className="h-8 w-8 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p>No users found.</p>
-        )}
-      </div>
+  <p className="bold display-flex p-2 text-center text-xl text-blue-600">
+    Add Team Members
+  </p>
+
+  <form className="mx-auto max-w-md">
+    <label className="sr-only mb-2 text-sm font-medium text-gray-900 dark:text-white">
+      Search
+    </label>
+    <div className="relative">
+      <input
+        type="search"
+        id="default-search"
+        className="block w-full rounded-lg border border-gray-300 p-2 ps-2 text-sm text-gray-900"
+        placeholder="Search Users"
+        value={searchString}
+        onChange={(e) => setSearchString(e.target.value)}
+      />
     </div>
+  </form>
+
+  {/* Search Results */}
+  <div className="mt-4 px-4 h-48 overflow-y-auto border rounded">
+    {isSearching ? (
+      <p>Searching...</p>
+    ) : searchResults.length > 0 ? (
+      <ul>
+        {searchResults.map((user: User) => {
+          return (
+            <li
+              key={user.id}
+              className={`mb-2 flex cursor-pointer items-center space-x-2 border-b pb-2 ${
+                selectedUsers.some((selected) => selected.id === user.id)
+                  ? "bg-blue-100"
+                  : ""
+              }`}
+              onClick={() => toggleUserSelection(user)}
+            >
+              <img
+                src={user.image || "/profile.webp"}
+                alt={user.name}
+                className="h-8 w-8 rounded-full"
+              />
+              <div>
+                <p className="font-medium">{user.name}</p>
+                <p className="text-sm text-gray-500">{user.email}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <p>No users found.</p>
+    )}
+  </div>
+
+  {/* Selected Items */}
+  <div className="mt-4 px-4 h-72 overflow-y-auto border rounded">
+    <p className="mb-2 text-sm font-medium text-gray-700">Selected Members:</p>
+    {selectedUsers.length > 0 ? (
+      <ul>
+        {selectedUsers.map((user: User) => (
+          <li
+            key={user.id}
+            className="mb-2 flex items-center space-x-2 border-b pb-2"
+          >
+            <img
+              src={user.image || "/profile.webp"}
+              alt={user.name}
+              className="h-8 w-8 rounded-full"
+            />
+            <div>
+              <p className="font-medium">{user.name}</p>
+              <p className="text-sm text-gray-500">{user.email}</p>
+            </div>
+            <button
+              onClick={() => toggleUserSelection(user)}
+              className="ml-auto text-red-500 hover:underline"
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p className="text-sm text-gray-500">No members selected.</p>
+    )}
+  </div>
+</div>
   );
 };
 

@@ -97,12 +97,18 @@ model ProjectAndTeam {
   @@unique([projectId, userId])
 }
 
+enum TaskStatus {
+  TODO
+  INPROCESS
+  COMPLETED
+}
+
 model Task {
   id          String   @id @default(cuid())
   title       String
   description String
   projectId   String
-  status      String
+  status      TaskStatus
   tags        String[]
   priority    String?
   startDate   DateTime
