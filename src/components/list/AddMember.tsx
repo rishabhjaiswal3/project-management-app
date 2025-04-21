@@ -1,0 +1,113 @@
+import React, { useState, useEffect } from "react";
+import { api } from "@/utils/api";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+}
+
+interface AddMemberProps {
+  selectedUsers: User[];
+  setSelectedUsers: React.Dispatch<React.SetStateAction<User[]>>;
+}
+
+const AddMember: React.FC<AddMemberProps> = ({
+  selectedUsers,
+  setSelectedUsers,
+}) => {
+  const [searchString, setSearchString] = useState<string>("");
+  const [debouncedSearchString, setDebouncedSearchString] =
+    useState<string>("");
+
+  // Debounce the search input
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setDebouncedSearchString(searchString.trim());
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn); // Cleanup timeout
+  }, [searchString]);
+
+  // Fetch users based on the debounced search string
+  const { data: searchResults = [], isLoading: isSearching } =
+    api.user.getUsersBySearchString.useQuery(
+      { searchString: debouncedSearchString },
+      {
+        enabled: debouncedSearchString !== "", // Only fetch when searchString is not empty
+      },
+    );
+
+  // Toggle user selection
+  const toggleUserSelection = (user: User) => {
+    if (selectedUsers.some((selected) => selected.id === user.id)) {
+      // Remove user if already selected
+      setSelectedUsers((prev) =>
+        prev.filter((selected) => selected.id !== user.id),
+      );
+    } else {
+      // Add user if not already selected
+      setSelectedUsers((prev) => [...prev, user]);
+    }
+  };
+
+  return (
+    <div>
+      <p className="bold display-flex p-2 text-center text-xl text-blue-600">
+        Add Team Members
+      </p>
+
+      <form className="mx-auto max-w-md">
+        <label className="sr-only mb-2 text-sm font-medium text-gray-900 dark:text-white">
+          Search
+        </label>
+        <div className="relative">
+          <input
+            type="search"
+            id="default-search"
+            className="block w-full rounded-lg border border-gray-300 p-2 ps-2 text-sm text-gray-900"
+            placeholder="Search Users"
+            value={searchString}
+            onChange={(e) => setSearchString(e.target.value)}
+          />
+        </div>
+      </form>
+      <div className="mt-4 px-4">
+        {isSearching ? (
+          <p>Searching...</p>
+        ) : searchResults.length > 0 ? (
+          <ul>
+            {searchResults.map((user: User) => {
+              return (
+                <li
+                  key={user.id}
+                  className={`mb-2 flex cursor-pointer items-center space-x-2 border-b pb-2 ${
+                    selectedUsers.some((selected) => selected.id === user.id)
+                      ? "bg-blue-100"
+                      : ""
+                  }`}
+                  onClick={() => toggleUserSelection(user)}
+                >
+                  <img
+                    src={user.image || "/profile.webp"}
+                    alt={user.name}
+                    className="h-8 w-8 rounded-full"
+                  />
+                  <div>
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p>No users found.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AddMember;

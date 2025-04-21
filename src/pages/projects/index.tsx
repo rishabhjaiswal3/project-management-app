@@ -24,6 +24,7 @@ export default function ProjectListPage() {
   };
 
   const [newProject, setNewProject] = useState(initialProjectState);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
 
   const grouped = projects?.reduce(
     (acc, project) => {
@@ -38,9 +39,15 @@ export default function ProjectListPage() {
   const handleCreateProject = async () => {
     try {
       if (!newProject.title) return;
-      console.log("my project to send is ", newProject);
-      await createProjectMutation.mutateAsync(newProject);
+      console.log("my project to send is ", newProject,selectedUsers);
+      let members = selectedUsers.map((user) => user.id);
+      const newProjectWithMembers = {
+        ...newProject,
+        members: members,
+      };
+      await createProjectMutation.mutateAsync(newProjectWithMembers);
       setNewProject(initialProjectState);
+      setSelectedUsers([]);
       setIsModalOpen(false);
     } catch (err) {
       if (err instanceof TRPCClientError) {
@@ -73,6 +80,8 @@ export default function ProjectListPage() {
             setNewProject={setNewProject}
             setIsModalOpen={setIsModalOpen}
             handleCreateProject={handleCreateProject}
+            selectedUsers={selectedUsers}
+            setSelectedUsers={setSelectedUsers}
           />
         )}
         <div

@@ -98,7 +98,7 @@ export const projectRouter = createTRPCRouter({
       getAllProjects: publicProcedure.query(async ({ ctx }) => {
         return ctx.db.project.findMany({
           include: {
-            projectAndTeam: {
+            teamMembers: { // Use the correct relation name from your schema
               include: {
                 user: {
                   select: {
