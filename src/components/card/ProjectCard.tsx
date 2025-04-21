@@ -6,7 +6,7 @@ interface projectItemProps {
     id?: string;
     title: string;
     description: string;
-    status: string;
+    status: "PENDING" | "ACTIVE" | "COMPLETED";
     teamMembers: {
       user: {
         id: string;

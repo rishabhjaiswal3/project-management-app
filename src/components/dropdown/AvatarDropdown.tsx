@@ -30,7 +30,6 @@ const AvatarDropdown = () => {
     <div ref={dropdownRef}>
       <img
         id="avatarButton"
-        type="button"
         onClick={toggleDropdown}
         className="w-14 h-14 rounded-full cursor-pointer"
         src="/profile.webp"

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 
 interface User {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string | null;
   email: string;
-  image?: string;
+  image?: string | null;
 }
 
 interface AddMemberProps {
@@ -37,7 +37,7 @@ const AddMember: React.FC<AddMemberProps> = ({
       {
         enabled: debouncedSearchString !== "", // Only fetch when searchString is not empty
       },
-    );
+    ) as { data: User[]; isLoading: boolean };;
 
   // Toggle user selection
   const toggleUserSelection = (user: User) => {
@@ -94,7 +94,7 @@ const AddMember: React.FC<AddMemberProps> = ({
             >
               <img
                 src={user.image || "/profile.webp"}
-                alt={user.name}
+                alt={user.name ?? "profile picture "}
                 className="h-8 w-8 rounded-full"
               />
               <div>
@@ -122,7 +122,7 @@ const AddMember: React.FC<AddMemberProps> = ({
           >
             <img
               src={user.image || "/profile.webp"}
-              alt={user.name}
+              alt={user.name || "profile picture"}
               className="h-8 w-8 rounded-full"
             />
             <div>
