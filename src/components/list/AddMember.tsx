@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
-
-interface User {
-  id?: string;
-  name?: string | null;
-  email: string;
-  image?: string | null;
-}
+import { type User} from "@/components/modal/User"; // Assuming you have a User interface defined in a separate file
+// interface User {
+//   id?: string;
+//   name?: string | null;
+//   email: string;
+//   image?: string | null;
+// }
 
 interface AddMemberProps {
   selectedUsers: User[];
