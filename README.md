@@ -352,5 +352,5 @@ Task
   <li>Database powered by Prisma and PostgreSQL.</li>
 </ul>
 
-
-
+<h1>Deployment</h1>
+<p> Follow the offical blog for docker for its deployment https://sst.dev/docs/start/aws/nextjs/#containers</p>
