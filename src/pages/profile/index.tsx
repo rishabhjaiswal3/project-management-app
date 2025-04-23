@@ -2,12 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "@/utils/api";
 import AuthWrapper from "@/wrapper/AuthWrapper";
+import Image from "next/image";
+
 interface UserProfile {
   name: string;
   email: string;
   image: string;
   password?: string;
 }
+
 const Profile = () => {
   const { data: session } = useSession();
 
@@ -17,41 +20,41 @@ const Profile = () => {
   const [image, setImage] = useState(session?.user?.image ?? "/profile.webp");
 
   const updateProfile = api.user.updateProfile.useMutation();
-  const { data: user, isLoading } = api.user.getProfile.useQuery();
+  const { data: user } = api.user.getProfile.useQuery();
 
-  const toBase64 = (file: any) =>
-    new Promise((resolve, reject) => {
+  const toBase64 = (file: Blob) =>
+    new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
     });
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      let base64 = (await toBase64(file)) as string;
+    const file = e.target.files?.[0];
+    if (file) {
+      const base64 = (await toBase64(file)) as string;
       setImage(base64);
     }
   };
 
   useEffect(() => {
-    console.log("my user is ", user);
     if (user) {
-      console.log("==> ", user);
       setName(user?.name ?? "");
       setEmail(user?.email ?? "");
       setImage(user?.image ?? "");
     }
-  }, [session?.user]);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    alert('we are not update image, for that we have to integrate s3 bucket, due to less time we have base64 image , but we are not uploading it')
+    alert(
+      "We are not updating the image. For that, we need to integrate an S3 bucket. Due to time constraints, we are using a base64 image, but it is not being uploaded."
+    );
     e.preventDefault();
 
-    let data: UserProfile = { name, email, image:'' };
+    const data: UserProfile = { name, email, image: "" };
     if (password) {
-      data["password"] = password;
+      data.password = password;
     }
     const res = await updateProfile.mutateAsync(data);
     console.log("res", res);
@@ -70,9 +73,11 @@ const Profile = () => {
               Profile Image
             </label>
             <div className="mt-2 flex items-center">
-              <img
+              <Image
                 src={image}
                 alt="Profile"
+                width={64}
+                height={64}
                 className="mr-4 h-16 w-16 rounded-full object-cover"
               />
               <input

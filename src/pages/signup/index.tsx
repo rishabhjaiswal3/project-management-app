@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import { api } from "@/utils/api";
 import {  useSession, signIn } from "next-auth/react";
 import AuthWrapper from "@/wrapper/AuthWrapper";
@@ -116,9 +117,9 @@ const Signup = () => {
         )}
         <p className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Login here
-          </a>
+          <Link href="/login">
+            <span className="text-blue-600 hover:underline">Login here</span>
+          </Link>
         </p>
       </div>
     </div>

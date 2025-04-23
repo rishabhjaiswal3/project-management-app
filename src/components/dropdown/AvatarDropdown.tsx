@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 const AvatarDropdown = () => {
   const { data: session } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -31,18 +32,18 @@ const AvatarDropdown = () => {
       <img
         id="avatarButton"
         onClick={toggleDropdown}
-        className="w-14 h-14 rounded-full cursor-pointer"
+        className="h-14 w-14 cursor-pointer rounded-full"
         src="/profile.webp"
         alt="User dropdown"
       />
       {isDropdownOpen && (
         <div
           id="userDropdown"
-          className="z-10 absolute mt-1 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600"
+          className="absolute z-10 mt-1 w-44 divide-y divide-gray-100 rounded-lg bg-white shadow-sm dark:divide-gray-600 dark:bg-gray-700"
         >
           <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
             <div>{session?.user?.name ?? "User"}</div>
-            <div className="font-medium truncate">
+            <div className="truncate font-medium">
               {session?.user?.email ?? "--"}
             </div>
           </div>
@@ -51,25 +52,24 @@ const AvatarDropdown = () => {
             aria-labelledby="avatarButton"
           >
             <li>
-              <a
+              <Link
                 href="/profile"
                 className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
               >
                 Profile
-              </a>
+              </Link>
             </li>
           </ul>
           <div className="py-1">
-            <a
-              href="#"
-              onClick={() => {
-                signOut({ callbackUrl: "/" });
+            <button
+              onClick={async () => {
+                await signOut({ callbackUrl: "/" });
                 console.log("Sign out clicked");
               }}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
             >
               Sign out
-            </a>
+            </button>
           </div>
         </div>
       )}

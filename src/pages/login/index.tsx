@@ -1,7 +1,7 @@
 import React from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { api } from "@/utils/api";
+import Link from "next/link";
 type FormData = {
   email: string;
   password: string;
@@ -86,9 +86,9 @@ const Login = () => {
 
         <p className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
-          <a href="/signup" className="text-blue-600 hover:underline">
-            Sign up here
-          </a>
+          <Link href="/signup">
+            <span className="text-blue-600 hover:underline">Sign up here</span>
+          </Link>
         </p>
       </form>
     </div>
