@@ -58,7 +58,9 @@ const Tasks: React.FC = () => {
     };
     createTaskMutation.mutate({
       ...taskData,
-      selectedUsers: selectedUsers.map((user) => user.id), // Pass only user IDs
+      selectedUsers: selectedUsers
+        .map((user) => user.id)
+        .filter((id): id is string => !!id), // Filter out undefined values
     });
   };
 
@@ -81,7 +83,9 @@ const Tasks: React.FC = () => {
 
     updateTaskMutation.mutate({
       ...taskData,
-      selectedUsers: selectedUsers.map((user) => user.id), // Pass only user IDs
+      selectedUsers: selectedUsers
+        .map((user) => user.id)
+        .filter((id): id is string => !!id), // Filter out undefined values
     });
   };
 
