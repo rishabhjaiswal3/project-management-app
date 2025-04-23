@@ -41,9 +41,9 @@ const AvatarDropdown = () => {
           className="z-10 absolute mt-1 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600"
         >
           <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-            <div>{session?.user?.name || "Bonnie Green"}</div>
+            <div>{session?.user?.name ?? "User"}</div>
             <div className="font-medium truncate">
-              {session?.user?.email || "name@flowbite.com"}
+              {session?.user?.email ?? "--"}
             </div>
           </div>
           <ul

@@ -93,7 +93,7 @@ const AddMember: React.FC<AddMemberProps> = ({
               onClick={() => toggleUserSelection(user)}
             >
               <img
-                src={user.image || "/profile.webp"}
+                src={user.image ?? "/profile.webp"}
                 alt={user.name ?? "profile picture "}
                 className="h-8 w-8 rounded-full"
               />
@@ -121,8 +121,8 @@ const AddMember: React.FC<AddMemberProps> = ({
             className="mb-2 flex items-center space-x-2 border-b pb-2"
           >
             <img
-              src={user.image || "/profile.webp"}
-              alt={user.name || "profile picture"}
+              src={user.image ?? "/profile.webp"}
+              alt={user.name ?? "profile picture"}
               className="h-8 w-8 rounded-full"
             />
             <div>

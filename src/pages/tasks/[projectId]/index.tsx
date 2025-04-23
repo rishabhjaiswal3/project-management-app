@@ -215,7 +215,7 @@ const TaskModal: React.FC<{
           <label className="block text-sm font-medium">Title</label>
           <input
             name="title"
-            defaultValue={currentTask?.title || ""}
+            defaultValue={currentTask?.title ?? ""}
             className="w-full rounded border px-2 py-1"
             required
           />
@@ -224,7 +224,7 @@ const TaskModal: React.FC<{
           <label className="block text-sm font-medium">Description</label>
           <textarea
             name="description"
-            defaultValue={currentTask?.description || ""}
+            defaultValue={currentTask?.description ?? ""}
             className="w-full rounded border px-2 py-1"
             required
           />
@@ -233,7 +233,7 @@ const TaskModal: React.FC<{
           <label className="block text-sm font-medium">Tags (comma-separated)</label>
           <input
             name="tags"
-            defaultValue={currentTask?.tags?.join(",") || ""}
+            defaultValue={currentTask?.tags?.join(",") ?? ""}
             className="w-full rounded border px-2 py-1"
           />
         </div>
@@ -241,7 +241,7 @@ const TaskModal: React.FC<{
           <label className="block text-sm font-medium">Priority</label>
           <select
             name="priority"
-            defaultValue={currentTask?.priority || priorityEnum.LOW}
+            defaultValue={currentTask?.priority ?? priorityEnum.LOW}
             className="w-full rounded border px-2 py-1"
           >
             <option value={priorityEnum.LOW}>Low</option>
@@ -253,7 +253,7 @@ const TaskModal: React.FC<{
           <label className="block text-sm font-medium">Status</label>
           <select
             name="status"
-            defaultValue={currentTask?.status || TaskStatus.TODO}
+            defaultValue={currentTask?.status ?? TaskStatus.TODO}
             className="w-full rounded border px-2 py-1"
           >
             <option value={TaskStatus.TODO}>TODO</option>

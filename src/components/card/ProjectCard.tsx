@@ -1,12 +1,13 @@
 import React, { type FC } from "react";
 import { type ProjectProps } from "@/pages/interfaces/ProjectProps";
+import type { ProjectStatus } from "../modal/ProjectStatus";
 
 interface projectItemProps {
   project: {
     id?: string;
     title: string;
     description: string;
-    status: "PENDING" | "ACTIVE" | "COMPLETED";
+    status: ProjectStatus;
     teamMembers: {
       user: {
         id: string;

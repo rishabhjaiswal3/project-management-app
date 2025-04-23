@@ -7,6 +7,8 @@ import CreateProject from "@/components/modal/CreateProject";
 import ProjectCard from "@/components/card/ProjectCard";
 import AuthWrapper from "@/wrapper/AuthWrapper";
 import { type ProjectProps } from "@/pages/interfaces/ProjectProps";
+import { ProjectStatus } from "@/components/modal/ProjectStatus";
+
 export default function ProjectListPage() {
 
   const utils = api.useContext(); // Access tRPC's query utilities
@@ -45,7 +47,7 @@ export default function ProjectListPage() {
   const grouped = projects?.reduce(
     (acc, project) => {
       if (!project.id) return acc;
-      acc[project.id] = acc[project.id] || [];
+      acc[project.id] = acc[project.id] ?? [];
       (acc[project.id] as typeof projects)!.push(project);
       return acc;
     },
@@ -113,7 +115,7 @@ export default function ProjectListPage() {
   
     setIsEditMode(true);
     setProjectId(project?.id);
-    setSelectedUsers(project?.teamMembers || []); // Set selected users to the project's members
+    setSelectedUsers(project?.teamMembers ?? []); // Set selected users to the project's members
     setIsModalOpen(true);
   };
 
@@ -190,6 +192,9 @@ export default function ProjectListPage() {
                     <ProjectCard 
                     project={{
                       ...project,
+                      status: Object.values(ProjectStatus).includes(project.status as ProjectStatus)
+                      ? (project.status as ProjectStatus)
+                      : ProjectStatus.PENDING,
                       teamMembers: project.teamMembers.map((member) => ({
                         user: {
                           id: member.user.id,

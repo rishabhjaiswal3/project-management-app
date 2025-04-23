@@ -33,7 +33,7 @@ export const projectRouter = createTRPCRouter({
               title: input.title,
               description: input.description,
               status: input.status ?? ProjectStatus.PENDING, // Always sets to "TODO"
-              ownedBy: session?.user.id || null, // Set foreign key
+              ownedBy: session?.user.id ?? null, // Set foreign key
               createdAt: new Date(),
               updatedAt: new Date(),
             } as Prisma.ProjectUncheckedCreateInput,

@@ -58,7 +58,7 @@ export const authConfig = {
           });
   
           // Check if user exists and compare the password
-          if (user && bcrypt.compareSync(credentials?.password as string, (user?.password || "") as string )) {
+          if (user && bcrypt.compareSync(credentials?.password as string, (user?.password ?? "") as string )) {
             console.log("ok ",user);
             return { id: user.id, email: user.email, name: user.name };
           }

@@ -11,10 +11,10 @@ interface UserProfile {
 const Profile = () => {
   const { data: session } = useSession();
 
-  const [name, setName] = useState(session?.user?.name || "");
-  const [email, setEmail] = useState(session?.user?.email || ""); // Email is non-editable
+  const [name, setName] = useState(session?.user?.name ?? "");
+  const [email, setEmail] = useState(session?.user?.email ?? ""); // Email is non-editable
   const [password, setPassword] = useState("");
-  const [image, setImage] = useState(session?.user?.image || "/profile.webp");
+  const [image, setImage] = useState(session?.user?.image ?? "/profile.webp");
 
   const updateProfile = api.user.updateProfile.useMutation();
   const { data: user, isLoading } = api.user.getProfile.useQuery();
