@@ -13,35 +13,52 @@ enum TaskStatus {
 }
 export const taskRouter = createTRPCRouter({
   createTask: protectedProcedure
-    .input(
-      z.object({
-        title: z.string().min(1),
-        projectId: z.string(),
-        description: z.string(),
-        tags: z.array(z.string()),
-        priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
-        status: z.enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]]).optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.task.create({
-        data: {
-          title: input.title,
-          description: input.description,
-          projectId: input.projectId,
-          status: input.status ?? "TODO",
-          tags: input.tags,
-          priority: input.priority ?? "LOW",
-          startDate: input.startDate ?? new Date(),
-          endDate: input.endDate ?? new Date(),
-          createdBy: ctx.session.user.id.toString() ?? "", // <-- fixed here
-          createdAt: new Date(),
-        } as Prisma.TaskUncheckedCreateInput,
-      });
+  .input(
+    z.object({
+      title: z.string().min(1),
+      projectId: z.string(),
+      description: z.string(),
+      tags: z.array(z.string()),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+      status: z
+        .enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]])
+        .optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
+      selectedUsers: z.array(z.string()).optional(),
     }),
+  )
+  .mutation(async ({ ctx, input }) => {
+    // Await the task creation
+    const task = await ctx.db.task.create({
+      data: {
+        title: input.title,
+        description: input.description,
+        projectId: input.projectId,
+        status: input.status ?? "TODO",
+        tags: input.tags,
+        priority: input.priority ?? "LOW",
+        startDate: input.startDate ?? new Date(),
+        endDate: input.endDate ?? new Date(),
+        createdBy: ctx.session.user.id.toString() ?? "",
+        createdAt: new Date(),
+      } as Prisma.TaskUncheckedCreateInput,
+    });
 
+    // Handle assigning users to the task
+    if (input.selectedUsers && input.selectedUsers.length > 0) {
+      const taskAssignees = input.selectedUsers.map((userId: string) => ({
+        taskId: task.id, // Use the resolved task ID
+        userId,
+      }));
+
+      await ctx.db.taskAndUser.createMany({
+        data: taskAssignees,
+      });
+    }
+
+    return task;
+  }),
   assignTaskToUser: protectedProcedure
     .input(
       z.object({
@@ -105,21 +122,25 @@ export const taskRouter = createTRPCRouter({
         },
       });
     }),
-  updateTask: protectedProcedure
+    updateTask: protectedProcedure
     .input(
       z.object({
         id: z.string(),
         title: z.string().min(1),
         description: z.string(),
         tags: z.array(z.string()),
-        status: z.enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]]).optional(),
+        status: z
+          .enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]])
+          .optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
+        selectedUsers: z.array(z.string()).optional(), // Add selectedUsers to the input
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.task.update({
+      // Update the task details
+      const updatedTask = await ctx.db.task.update({
         where: {
           id: input.id,
         },
@@ -133,8 +154,31 @@ export const taskRouter = createTRPCRouter({
           endDate: input.endDate ?? new Date(),
         } as Prisma.TaskUncheckedUpdateInput,
       });
+  
+      // Handle updating task assignees if selectedUsers is provided
+      if (input.selectedUsers) {
+        // Remove existing assignees for the task
+        await ctx.db.taskAndUser.deleteMany({
+          where: {
+            taskId: input.id,
+          },
+        });
+  
+        // Add new assignees
+        if (input.selectedUsers.length > 0) {
+          const taskAssignees = input.selectedUsers.map((userId: string) => ({
+            taskId: input.id,
+            userId,
+          }));
+  
+          await ctx.db.taskAndUser.createMany({
+            data: taskAssignees,
+          });
+        }
+      }
+  
+      return updatedTask;
     }),
-
   deleteTask: protectedProcedure
     .input(
       z.object({

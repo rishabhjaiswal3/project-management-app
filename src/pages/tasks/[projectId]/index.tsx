@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/utils/api";
 import { type TaskData, priorityEnum, TaskStatus, type Task } from "@/components/modal/Task";
+import AddMember from "@/components/list/AddMember";
+import { type User } from "@/components/modal/User"; 
 
 const Tasks: React.FC = () => {
   const router = useRouter();
@@ -10,6 +12,8 @@ const Tasks: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+
 
   const { data: tasks, refetch } = api.task.getTasksByProjectId.useQuery(
     projectId as string,
@@ -39,6 +43,7 @@ const Tasks: React.FC = () => {
   });
 
   const handleCreateTask = (formData: FormData) => {
+
     const taskData: TaskData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
@@ -51,8 +56,10 @@ const Tasks: React.FC = () => {
       endDate: new Date(formData.get("endDate") as string),
       projectId: projectId as string,
     };
-
-    createTaskMutation.mutate(taskData);
+    createTaskMutation.mutate({
+      ...taskData,
+      selectedUsers: selectedUsers.map((user) => user.id), // Pass only user IDs
+    });
   };
 
   const handleUpdateTask = (formData: FormData) => {
@@ -72,7 +79,10 @@ const Tasks: React.FC = () => {
       projectId: projectId as string,
     };
 
-    updateTaskMutation.mutate(taskData);
+    updateTaskMutation.mutate({
+      ...taskData,
+      selectedUsers: selectedUsers.map((user) => user.id), // Pass only user IDs
+    });
   };
 
   const handleDeleteTask = (taskId: string) => {
@@ -148,6 +158,8 @@ const Tasks: React.FC = () => {
           currentTask={currentTask}
           onClose={() => setIsModalOpen(false)}
           onSubmit={isEditMode ? handleUpdateTask : handleCreateTask}
+          selectedUsers={selectedUsers}
+          setSelectedUsers={setSelectedUsers}
         />
       )}
     </div>
@@ -200,9 +212,12 @@ const TaskModal: React.FC<{
   currentTask: Task | null;
   onClose: () => void;
   onSubmit: (formData: FormData) => void;
-}> = ({ isEditMode, currentTask, onClose, onSubmit }) => (
+  selectedUsers: User[];
+  setSelectedUsers: React.Dispatch<React.SetStateAction<User[]>>;
+}> = ({ isEditMode, currentTask, onClose, onSubmit, selectedUsers, setSelectedUsers }) => (
+  
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="w-[400px] rounded bg-white p-6 shadow-lg">
+    <div className="w-[800px] rounded bg-white p-6 shadow-lg">
       <h2 className="text-lg font-bold">{isEditMode ? "Edit Task" : "Create Task"}</h2>
       <form
         onSubmit={(e) => {
@@ -211,83 +226,90 @@ const TaskModal: React.FC<{
           onSubmit(formData);
         }}
       >
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Title</label>
-          <input
-            name="title"
-            defaultValue={currentTask?.title ?? ""}
-            className="w-full rounded border px-2 py-1"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Description</label>
-          <textarea
-            name="description"
-            defaultValue={currentTask?.description ?? ""}
-            className="w-full rounded border px-2 py-1"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Tags (comma-separated)</label>
-          <input
-            name="tags"
-            defaultValue={currentTask?.tags?.join(",") ?? ""}
-            className="w-full rounded border px-2 py-1"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Priority</label>
-          <select
-            name="priority"
-            defaultValue={currentTask?.priority ?? priorityEnum.LOW}
-            className="w-full rounded border px-2 py-1"
-          >
-            <option value={priorityEnum.LOW}>Low</option>
-            <option value={priorityEnum.MEDIUM}>Medium</option>
-            <option value={priorityEnum.HIGH}>High</option>
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Status</label>
-          <select
-            name="status"
-            defaultValue={currentTask?.status ?? TaskStatus.TODO}
-            className="w-full rounded border px-2 py-1"
-          >
-            <option value={TaskStatus.TODO}>TODO</option>
-            <option value={TaskStatus.INPROCESS}>In Progress</option>
-            <option value={TaskStatus.COMPLETED}>Completed</option>
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">Start Date</label>
-          <input
-            type="date"
-            name="startDate"
-            defaultValue={
-              currentTask?.startDate
-                ? new Date(currentTask.startDate).toISOString().split("T")[0]
-                : ""
-            }
-            className="w-full rounded border px-2 py-1"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium">End Date</label>
-          <input
-            type="date"
-            name="endDate"
-            defaultValue={
-              currentTask?.endDate
-                ? new Date(currentTask.endDate).toISOString().split("T")[0]
-                : ""
-            }
-            className="w-full rounded border px-2 py-1"
-            required
-          />
+        <div className="flex flex-row space-y-4 ">
+          <div className="w-[400px] mr-10" > 
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Title</label>
+                <input
+                  name="title"
+                  defaultValue={currentTask?.title ?? ""}
+                  className="w-full rounded border px-2 py-1"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Description</label>
+                <textarea
+                  name="description"
+                  defaultValue={currentTask?.description ?? ""}
+                  className="w-full rounded border px-2 py-1"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Tags (comma-separated)</label>
+                <input
+                  name="tags"
+                  defaultValue={currentTask?.tags?.join(",") ?? ""}
+                  className="w-full rounded border px-2 py-1"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Priority</label>
+                <select
+                  name="priority"
+                  defaultValue={currentTask?.priority ?? priorityEnum.LOW}
+                  className="w-full rounded border px-2 py-1"
+                >
+                  <option value={priorityEnum.LOW}>Low</option>
+                  <option value={priorityEnum.MEDIUM}>Medium</option>
+                  <option value={priorityEnum.HIGH}>High</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Status</label>
+                <select
+                  name="status"
+                  defaultValue={currentTask?.status ?? TaskStatus.TODO}
+                  className="w-full rounded border px-2 py-1"
+                >
+                  <option value={TaskStatus.TODO}>TODO</option>
+                  <option value={TaskStatus.INPROCESS}>In Progress</option>
+                  <option value={TaskStatus.COMPLETED}>Completed</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">Start Date</label>
+                <input
+                  type="date"
+                  name="startDate"
+                  defaultValue={
+                    currentTask?.startDate
+                      ? new Date(currentTask.startDate).toISOString().split("T")[0]
+                      : ""
+                  }
+                  className="w-full rounded border px-2 py-1"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium">End Date</label>
+                <input
+                  type="date"
+                  name="endDate"
+                  defaultValue={
+                    currentTask?.endDate
+                      ? new Date(currentTask.endDate).toISOString().split("T")[0]
+                      : ""
+                  }
+                  className="w-full rounded border px-2 py-1"
+                  required
+                />
+              </div>
+          </div>
+          <div className="w-[400px] mb-5">
+            <AddMember selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers} />
+          </div>
         </div>
         <div className="flex justify-end space-x-2">
           <button

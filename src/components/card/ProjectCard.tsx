@@ -28,11 +28,12 @@ const ProjectCard: FC<projectItemProps> = ({ project, onEdit, onDelete }) => {
     location.href = `/tasks/${projectId}`;
   };
   return (
-    <div className="relative m-2 h-[300px] overflow-hidden rounded shadow-lg z-6" onClick={()=>handleClick(project?.id)}>
+    <div className="relative m-2 h-[300px] overflow-hidden rounded shadow-lg z-6" >
       <img
         className="h-30 w-full object-cover"
         src="project_bg.jpg"
         alt="Project"
+        onClick={()=>handleClick(project?.id)}
       />
       <div className="h-[120px] px-3 py-3">
         <div className="mb-1 text-lg font-bold">
