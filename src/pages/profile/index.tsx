@@ -33,7 +33,7 @@ const Profile = () => {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const base64 = (await toBase64(file)) as string;
+      const base64 = (await toBase64(file));
       setImage(base64);
     }
   };

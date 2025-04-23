@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AvatarDropdown from "@/components/dropdown/AvatarDropdown";
 import { api } from "@/utils/api";
 import { TRPCClientError } from "@trpc/client";
@@ -8,27 +8,27 @@ import ProjectCard from "@/components/card/ProjectCard";
 import AuthWrapper from "@/wrapper/AuthWrapper";
 import { type ProjectProps } from "@/pages/interfaces/ProjectProps";
 import { ProjectStatus } from "@/components/modal/ProjectStatus";
+import { type User } from "@/components/modal/User"; // Assuming you have a User interface defined in a separate file
 
 export default function ProjectListPage() {
-
   const utils = api.useContext(); // Access tRPC's query utilities
   const { data: projects, isLoading } = api.project.getAllProjects.useQuery();
   const createProjectMutation = api.project.createProject.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       // Invalidate the getAllProjects query to refetch data
-      utils.project.getAllProjects.invalidate();
+      await utils.project.getAllProjects.invalidate();
     },
   });
   const updateProjectMutation = api.project.updateProject.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       // Invalidate the getAllProjects query to refetch data
-      utils.project.getAllProjects.invalidate();
+      await utils.project.getAllProjects.invalidate();
     },
   });
   const deleteProjectMutation = api.project.deleteProject.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       // Invalidate the getAllProjects query to refetch data
-      utils.project.getAllProjects.invalidate();
+      await utils.project.getAllProjects.invalidate();
     },
   });
 
@@ -42,7 +42,7 @@ export default function ProjectListPage() {
   };
 
   const [newProject, setNewProject] = useState(initialProjectState);
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
 
   const grouped = projects?.reduce(
     (acc, project) => {
@@ -57,11 +57,11 @@ export default function ProjectListPage() {
   const handleCreateProject = async () => {
     try {
       if (!newProject.title) return;
-      console.log("my project to send is ", newProject,selectedUsers);
-      let members = selectedUsers.map((user) => user.id);
+      console.log("my project to send is ", newProject, selectedUsers);
+      let members = selectedUsers.map((user) => user.id) ?? [];
       const newProjectWithMembers = {
         ...newProject,
-        members: members,
+        members: members ?? [],
       };
       await createProjectMutation.mutateAsync(newProjectWithMembers);
       setNewProject(initialProjectState);
@@ -80,7 +80,7 @@ export default function ProjectListPage() {
   const handleUpdateProject = async () => {
     try {
       if (!projectId) return;
-      console.log("my project to send is ", newProject,selectedUsers);
+      console.log("my project to send is ", newProject, selectedUsers);
       let members = selectedUsers.map((user) => user.id);
       const updatedProjectWithMembers = {
         ...newProject,
@@ -103,16 +103,16 @@ export default function ProjectListPage() {
 
   const editProject = async (project: ProjectProps) => {
     console.log("edit Project", project);
-    if( !project.id) {
+    if (!project.id) {
       alert("Project ID is required to edit a project.");
-      return ;
+      return;
     }
     setNewProject({
       title: project.title,
       description: project.description,
       status: project.status,
     });
-  
+
     setIsEditMode(true);
     setProjectId(project?.id);
     setSelectedUsers(project?.teamMembers ?? []); // Set selected users to the project's members
@@ -125,7 +125,7 @@ export default function ProjectListPage() {
       if (!project.id) {
         throw new Error("Project ID is required to delete a project.");
       }
-  
+
       const response = await deleteProjectMutation.mutateAsync(project.id);
       console.log("Project deleted successfully:", response);
     } catch (err) {
@@ -161,7 +161,9 @@ export default function ProjectListPage() {
             newProject={newProject}
             setNewProject={setNewProject}
             setIsModalOpen={setIsModalOpen}
-            handleCreateProject={ isEditMode ? handleUpdateProject : handleCreateProject}
+            handleCreateProject={
+              isEditMode ? handleUpdateProject : handleCreateProject
+            }
             isEditMode={isEditMode}
             selectedUsers={selectedUsers}
             setSelectedUsers={setSelectedUsers}
@@ -189,22 +191,26 @@ export default function ProjectListPage() {
               >
                 {group.map((project) => (
                   <li key={project.id} className="w-[300px]">
-                    <ProjectCard 
-                    project={{
-                      ...project,
-                      status: Object.values(ProjectStatus).includes(project.status as ProjectStatus)
-                      ? (project.status as ProjectStatus)
-                      : ProjectStatus.PENDING,
-                      teamMembers: project.teamMembers.map((member) => ({
-                        user: {
-                          id: member.user.id,
-                          name: member?.user?.name ?? "",
-                          email: member?.user?.email ?? "",
-                          image: member?.user?.image ?? "",
-                        },
-                      })),
-                    }}
-                    onEdit={editProject} onDelete={deleteProject} />
+                    <ProjectCard
+                      project={{
+                        ...project,
+                        status: Object.values(ProjectStatus).includes(
+                          project.status as ProjectStatus,
+                        )
+                          ? (project.status as ProjectStatus)
+                          : ProjectStatus.PENDING,
+                        teamMembers: project.teamMembers.map((member) => ({
+                          user: {
+                            id: member.user.id,
+                            name: member?.user?.name ?? "",
+                            email: member?.user?.email ?? "",
+                            image: member?.user?.image ?? "",
+                          },
+                        })),
+                      }}
+                      onEdit={editProject}
+                      onDelete={deleteProject}
+                    />
                   </li>
                 ))}
               </ul>
