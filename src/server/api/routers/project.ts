@@ -18,7 +18,7 @@ export const projectRouter = createTRPCRouter({
         z.object({
           title: z.string().min(1),
           description: z.string(),
-          status: z.string().optional(),
+          status: z.enum(["PENDING", "ACTIVE", "COMPLETED"]).optional(),
           members: z.array(z.string()),
         })
       ).mutation(async ({ ctx, input }) => {
@@ -62,7 +62,7 @@ export const projectRouter = createTRPCRouter({
           id: z.string().nonempty("Project ID is required"),
           title: z.string().min(1, "Title is required"),
           description: z.string(),
-          status:  z.string().optional(),
+          status: z.enum(["PENDING", "ACTIVE", "COMPLETED"]).optional(),
           members: z.array(z.string()).optional(),
         })
       ).mutation(async ({ ctx, input }) => {

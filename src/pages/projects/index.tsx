@@ -38,27 +38,29 @@ export default function ProjectListPage() {
   const initialProjectState = {
     title: "",
     description: "",
-    status: "PENDING",
+    status: ProjectStatus.PENDING,
   };
 
   const [newProject, setNewProject] = useState(initialProjectState);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
 
-  const grouped = projects?.reduce(
-    (acc, project) => {
-      if (!project.id) return acc;
-      acc[project.id] = acc[project.id] ?? [];
-      (acc[project.id] as typeof projects)!.push(project);
-      return acc;
-    },
-    {} as Record<string, (typeof projects)[number][]>,
-  );
+  const grouped: Record<string, ProjectProps[]> = projects
+  ? projects.reduce(
+      (acc, project) => {
+        if (!project.id) return acc;
+        acc[project.id] = acc[project.id] ?? [];
+        acc[project.id]!.push({...project});
+        return acc;
+      },
+      {} as Record<string, ProjectProps[]>,
+    )
+  : {};
 
   const handleCreateProject = async () => {
     try {
       if (!newProject.title) return;
       console.log("my project to send is ", newProject, selectedUsers);
-      let members = selectedUsers.map((user) => user.id) ?? [];
+      const members = selectedUsers.map((user) => user.id).filter((id): id is string => !!id);
       const newProjectWithMembers = {
         ...newProject,
         members: members ?? [],
@@ -81,7 +83,7 @@ export default function ProjectListPage() {
     try {
       if (!projectId) return;
       console.log("my project to send is ", newProject, selectedUsers);
-      let members = selectedUsers.map((user) => user.id);
+      const members = selectedUsers.map((user) => user.id).filter((id): id is string => !!id);
       const updatedProjectWithMembers = {
         ...newProject,
         id: projectId,
@@ -114,8 +116,20 @@ export default function ProjectListPage() {
     });
 
     setIsEditMode(true);
-    setProjectId(project?.id);
-    setSelectedUsers(project?.teamMembers ?? []); // Set selected users to the project's members
+    setProjectId(project.id);
+
+    
+    const _teamMembers =
+    project?.teamMembers
+      ?.filter((member) => member?.user?.id)
+      .map((member) => ({
+        id: member.user.id,
+        name: member.user.name ?? "",
+        email: member.user.email ?? "",
+        image: member.user.image ?? "",
+      })) ?? [];
+
+    setSelectedUsers(_teamMembers ?? []);
     setIsModalOpen(true);
   };
 
@@ -192,21 +206,19 @@ export default function ProjectListPage() {
                 {group.map((project) => (
                   <li key={project.id} className="w-[300px]">
                     <ProjectCard
-                      project={{
+                       project={{
                         ...project,
-                        status: Object.values(ProjectStatus).includes(
-                          project.status as ProjectStatus,
-                        )
+                        status: Object.values(ProjectStatus).includes(project.status as ProjectStatus)
                           ? (project.status as ProjectStatus)
-                          : ProjectStatus.PENDING,
-                        teamMembers: project.teamMembers.map((member) => ({
+                          : ProjectStatus.PENDING, // Fallback to a default status if invalid
+                        teamMembers: project?.teamMembers?.map((member) => ({
                           user: {
                             id: member.user.id,
                             name: member?.user?.name ?? "",
                             email: member?.user?.email ?? "",
                             image: member?.user?.image ?? "",
                           },
-                        })),
+                        })) ?? [],
                       }}
                       onEdit={editProject}
                       onDelete={deleteProject}

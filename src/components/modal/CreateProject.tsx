@@ -3,20 +3,20 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/utils/api";
 import AddMember from "../list/AddMember";
 import { type User } from "@/components/modal/User"; // Assuming you have a User interface defined in a separate file
-
+import { ProjectStatus } from "./ProjectStatus";
 
 interface CreateProjectProps {
   newProject: {
     title: string;
     description: string;
-    status: string;
+    status: ProjectStatus;
   };
   isEditMode?: boolean;
   setNewProject: React.Dispatch<
     React.SetStateAction<{
       title: string;
       description: string;
-      status: string;
+      status: ProjectStatus;
     }>
   >;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -70,7 +70,7 @@ const CreateProject: React.FC<CreateProjectProps> = ({
             className="mb-20 block w-full rounded-lg border p-2.5 text-sm text-black"
             value={newProject.status}
             onChange={(e) =>
-              setNewProject({ ...newProject, status: e.target.value })
+              setNewProject({ ...newProject, status: e.target.value as ProjectStatus })
             }
           >
             <option value="PENDING">PENDING</option>
