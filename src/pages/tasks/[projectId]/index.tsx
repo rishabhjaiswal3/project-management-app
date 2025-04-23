@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/utils/api";
+import { type TaskData, priorityEnum, TaskStatus, type Task } from "@/components/modal/Task";
 
-const Tasks = () => {
+const Tasks: React.FC = () => {
   const router = useRouter();
   const { projectId } = router.query;
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentTask, setCurrentTask] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
   const { data: tasks, refetch } = api.task.getTasksByProjectId.useQuery(
     projectId as string,
@@ -37,22 +38,45 @@ const Tasks = () => {
     },
   });
 
-  const handleCreateTask = (taskData) => {
-    createTaskMutation.mutate({
-      ...taskData,
+  const handleCreateTask = (formData: FormData) => {
+    const taskData: TaskData = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      tags: (formData.get("tags") as string).split(","),
+      priority: (Object.values(priorityEnum).includes(formData.get("priority") as priorityEnum)
+        ? (formData.get("priority") as priorityEnum)
+        : priorityEnum.LOW), // Validate and cast
+      status: formData.get("status") as TaskStatus,
+      startDate: new Date(formData.get("startDate") as string),
+      endDate: new Date(formData.get("endDate") as string),
       projectId: projectId as string,
-    });
+    };
+
+    createTaskMutation.mutate(taskData);
   };
 
-  const handleUpdateTask = (taskData) => {
-    updateTaskMutation.mutate({
-      ...taskData,
-      taskId: currentTask.id,
-    });
+  const handleUpdateTask = (formData: FormData) => {
+    if (!currentTask?.id) return;
+
+    const taskData: Task = {
+      id: currentTask.id,
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      tags: (formData.get("tags") as string).split(","),
+      priority: (Object.values(priorityEnum).includes(formData.get("priority") as priorityEnum)
+        ? (formData.get("priority") as priorityEnum)
+        : priorityEnum.LOW), // Validate and cast
+      status: formData.get("status") as TaskStatus,
+      startDate: new Date(formData.get("startDate") as string),
+      endDate: new Date(formData.get("endDate") as string),
+      projectId: projectId as string,
+    };
+
+    updateTaskMutation.mutate(taskData);
   };
 
-  const handleDeleteTask = (taskId) => {
-    deleteTaskMutation.mutate({ taskId });
+  const handleDeleteTask = (taskId: string) => {
+    deleteTaskMutation.mutate({ id: taskId });
   };
 
   const openCreateModal = () => {
@@ -61,19 +85,19 @@ const Tasks = () => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (task) => {
+  const openEditModal = (task: Task) => {
     setCurrentTask(task);
     setIsEditMode(true);
     setIsModalOpen(true);
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: priorityEnum): string => {
     switch (priority) {
-      case "LOW":
+      case priorityEnum.LOW:
         return "bg-gray-300";
-      case "MEDIUM":
+      case priorityEnum.MEDIUM:
         return "bg-orange-300";
-      case "HIGH":
+      case priorityEnum.HIGH:
         return "bg-red-300";
       default:
         return "bg-gray-300";
@@ -82,14 +106,26 @@ const Tasks = () => {
 
   if (!tasks) return <div>Loading...</div>;
 
-  // Filter tasks by status
-  const todoTasks = tasks.filter((task) => task.status === "TODO");
-  const inProgressTasks = tasks.filter((task) => task.status === "INPROCESS");
-  const completedTasks = tasks.filter((task) => task.status === "COMPLETED");
+  const filteredTasks: Task[] = tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    description: task?.description ?? "",
+    tags: task?.tags ?? [],
+    priority: (Object.values(priorityEnum).includes(task.priority as priorityEnum)
+      ? task.priority
+      : priorityEnum.LOW) as priorityEnum, // Validate and cast
+    status: task?.status as TaskStatus,
+    startDate: task?.startDate,
+    endDate: task?.endDate,
+    projectId: task.projectId,
+  }));
+
+  const todoTasks = filteredTasks.filter((task) => task.status === TaskStatus.TODO);
+  const inProgressTasks = filteredTasks.filter((task) => task.status === TaskStatus.INPROCESS);
+  const completedTasks = filteredTasks.filter((task) => task.status === TaskStatus.COMPLETED);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {/* Page Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Project Tasks</h1>
         <button
@@ -100,246 +136,177 @@ const Tasks = () => {
         </button>
       </div>
 
-      {/* Task Lists */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* TODO Tasks */}
-        <div>
-          <h2 className="mb-4 text-xl font-bold text-gray-800">TODO</h2>
-          <div className="space-y-4">
-            {todoTasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-lg border bg-white p-4 shadow hover:shadow-lg"
-              >
-                <h3 className="mb-2 text-lg font-bold text-gray-800">{task.title}</h3>
-                <p className="mb-2 text-sm text-gray-600">{task.description}</p>
-                <span
-                  className={`inline-block rounded px-2 py-1 text-sm font-semibold text-white ${getPriorityColor(
-                    task.priority
-                  )}`}
-                >
-                  {task.priority}
-                </span>
-                <div className="mt-4 flex space-x-2">
-                  <button
-                    onClick={() => openEditModal(task)}
-                    className="rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* INPROGRESS Tasks */}
-        <div>
-          <h2 className="mb-4 text-xl font-bold text-gray-800">In Progress</h2>
-          <div className="space-y-4">
-            {inProgressTasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-lg border bg-white p-4 shadow hover:shadow-lg"
-              >
-                <h3 className="mb-2 text-lg font-bold text-gray-800">{task.title}</h3>
-                <p className="mb-2 text-sm text-gray-600">{task.description}</p>
-                <span
-                  className={`inline-block rounded px-2 py-1 text-sm font-semibold text-white ${getPriorityColor(
-                    task.priority
-                  )}`}
-                >
-                  {task.priority}
-                </span>
-                <div className="mt-4 flex space-x-2">
-                  <button
-                    onClick={() => openEditModal(task)}
-                    className="rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* COMPLETED Tasks */}
-        <div>
-          <h2 className="mb-4 text-xl font-bold text-gray-800">Completed</h2>
-          <div className="space-y-4">
-            {completedTasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-lg border bg-white p-4 shadow hover:shadow-lg"
-              >
-                <h3 className="mb-2 text-lg font-bold text-gray-800">{task.title}</h3>
-                <p className="mb-2 text-sm text-gray-600">{task.description}</p>
-                <span
-                  className={`inline-block rounded px-2 py-1 text-sm font-semibold text-white ${getPriorityColor(
-                    task.priority
-                  )}`}
-                >
-                  {task.priority}
-                </span>
-                <div className="mt-4 flex space-x-2">
-                  <button
-                    onClick={() => openEditModal(task)}
-                    className="rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TaskList title="TODO" tasks={todoTasks} onEdit={openEditModal} onDelete={handleDeleteTask} getPriorityColor={getPriorityColor} />
+        <TaskList title="In Progress" tasks={inProgressTasks} onEdit={openEditModal} onDelete={handleDeleteTask} getPriorityColor={getPriorityColor} />
+        <TaskList title="Completed" tasks={completedTasks} onEdit={openEditModal} onDelete={handleDeleteTask} getPriorityColor={getPriorityColor} />
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-[400px] rounded bg-white p-6 shadow-lg">
-            <h2 className="text-lg font-bold">
-              {isEditMode ? "Edit Task" : "Create Task"}
-            </h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const taskData = {
-                  title: formData.get("title"),
-                  description: formData.get("description"),
-                  tags: formData.get("tags").split(","),
-                  priority: formData.get("priority"),
-                  status: formData.get("status"), // Add status field
-                  startDate: new Date(formData.get("startDate")),
-                  endDate: new Date(formData.get("endDate")),
-                };
-                if (isEditMode) {
-                  handleUpdateTask(taskData);
-                } else {
-                  handleCreateTask(taskData);
-                }
-              }}
-            >
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Title</label>
-                <input
-                  name="title"
-                  defaultValue={currentTask?.title || ""}
-                  className="w-full rounded border px-2 py-1"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Description</label>
-                <textarea
-                  name="description"
-                  defaultValue={currentTask?.description || ""}
-                  className="w-full rounded border px-2 py-1"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Tags (comma-separated)</label>
-                <input
-                  name="tags"
-                  defaultValue={currentTask?.tags?.join(",") || ""}
-                  className="w-full rounded border px-2 py-1"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Priority</label>
-                <select
-                  name="priority"
-                  defaultValue={currentTask?.priority || "LOW"}
-                  className="w-full rounded border px-2 py-1"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Status</label>
-                <select
-                  name="status"
-                  defaultValue={currentTask?.status || "TODO"}
-                  className="w-full rounded border px-2 py-1"
-                >
-                  <option value="TODO">TODO</option>
-                  <option value="INPROCESS">In Progress</option>
-                  <option value="COMPLETED">Completed</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">Start Date</label>
-                <input
-                  type="date"
-                  name="startDate"
-                  defaultValue={
-                    currentTask?.startDate
-                      ? new Date(currentTask.startDate).toISOString().split("T")[0]
-                      : ""
-                  }
-                  className="w-full rounded border px-2 py-1"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium">End Date</label>
-                <input
-                  type="date"
-                  name="endDate"
-                  defaultValue={
-                    currentTask?.endDate
-                      ? new Date(currentTask.endDate).toISOString().split("T")[0]
-                      : ""
-                  }
-                  className="w-full rounded border px-2 py-1"
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-                >
-                  {isEditMode ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <TaskModal
+          isEditMode={isEditMode}
+          currentTask={currentTask}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={isEditMode ? handleUpdateTask : handleCreateTask}
+        />
       )}
     </div>
   );
 };
+
+const TaskList: React.FC<{
+  title: string;
+  tasks: Task[];
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  getPriorityColor: (priority: priorityEnum) => string;
+}> = ({ title, tasks, onEdit, onDelete, getPriorityColor }) => (
+  <div>
+    <h2 className="mb-4 text-xl font-bold text-gray-800">{title}</h2>
+    <div className="space-y-4">
+      {tasks.map((task) => (
+        <div key={task.title} className="rounded-lg border bg-white p-4 shadow hover:shadow-lg">
+          <h3 className="mb-2 text-lg font-bold text-gray-800">{task.title}</h3>
+          <p className="mb-2 text-sm text-gray-600">{task.description}</p>
+          <span
+            className={`inline-block rounded px-2 py-1 text-sm font-semibold text-white ${getPriorityColor(
+              task.priority
+            )}`}
+          >
+            {task.priority}
+          </span>
+          <div className="mt-4 flex space-x-2">
+            <button
+              onClick={() => onEdit(task)}
+              className="rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(task.id!)}
+              className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const TaskModal: React.FC<{
+  isEditMode: boolean;
+  currentTask: Task | null;
+  onClose: () => void;
+  onSubmit: (formData: FormData) => void;
+}> = ({ isEditMode, currentTask, onClose, onSubmit }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-[400px] rounded bg-white p-6 shadow-lg">
+      <h2 className="text-lg font-bold">{isEditMode ? "Edit Task" : "Create Task"}</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target as HTMLFormElement);
+          onSubmit(formData);
+        }}
+      >
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Title</label>
+          <input
+            name="title"
+            defaultValue={currentTask?.title || ""}
+            className="w-full rounded border px-2 py-1"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Description</label>
+          <textarea
+            name="description"
+            defaultValue={currentTask?.description || ""}
+            className="w-full rounded border px-2 py-1"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Tags (comma-separated)</label>
+          <input
+            name="tags"
+            defaultValue={currentTask?.tags?.join(",") || ""}
+            className="w-full rounded border px-2 py-1"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Priority</label>
+          <select
+            name="priority"
+            defaultValue={currentTask?.priority || priorityEnum.LOW}
+            className="w-full rounded border px-2 py-1"
+          >
+            <option value={priorityEnum.LOW}>Low</option>
+            <option value={priorityEnum.MEDIUM}>Medium</option>
+            <option value={priorityEnum.HIGH}>High</option>
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Status</label>
+          <select
+            name="status"
+            defaultValue={currentTask?.status || TaskStatus.TODO}
+            className="w-full rounded border px-2 py-1"
+          >
+            <option value={TaskStatus.TODO}>TODO</option>
+            <option value={TaskStatus.INPROCESS}>In Progress</option>
+            <option value={TaskStatus.COMPLETED}>Completed</option>
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Start Date</label>
+          <input
+            type="date"
+            name="startDate"
+            defaultValue={
+              currentTask?.startDate
+                ? new Date(currentTask.startDate).toISOString().split("T")[0]
+                : ""
+            }
+            className="w-full rounded border px-2 py-1"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium">End Date</label>
+          <input
+            type="date"
+            name="endDate"
+            defaultValue={
+              currentTask?.endDate
+                ? new Date(currentTask.endDate).toISOString().split("T")[0]
+                : ""
+            }
+            className="w-full rounded border px-2 py-1"
+            required
+          />
+        </div>
+        <div className="flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            {isEditMode ? "Update" : "Create"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+);
 
 export default Tasks;

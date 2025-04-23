@@ -187,7 +187,19 @@ export default function ProjectListPage() {
               >
                 {group.map((project) => (
                   <li key={project.id} className="w-[300px]">
-                    <ProjectCard project={project} onEdit={editProject} onDelete={deleteProject} />
+                    <ProjectCard 
+                    project={{
+                      ...project,
+                      teamMembers: project.teamMembers.map((member) => ({
+                        user: {
+                          id: member.user.id,
+                          name: member?.user?.name ?? "",
+                          email: member?.user?.email ?? "",
+                          image: member?.user?.image ?? "",
+                        },
+                      })),
+                    }}
+                    onEdit={editProject} onDelete={deleteProject} />
                   </li>
                 ))}
               </ul>

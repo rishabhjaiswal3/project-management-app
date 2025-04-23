@@ -6,13 +6,19 @@ import {
   publicProcedure,
 } from "@/server/api/trpc";
 
+export enum ProjectStatus {
+  PENDING = "PENDING",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
+}
+
 export const projectRouter = createTRPCRouter({
 
     createProject: protectedProcedure.input(
         z.object({
           title: z.string().min(1),
           description: z.string(),
-          status: z.string(Prisma.ProjectStatus).optional(),
+          status: z.string().optional(),
           members: z.array(z.string()).optional(),
         })
       ).mutation(async ({ ctx, input }) => {
@@ -26,7 +32,7 @@ export const projectRouter = createTRPCRouter({
             data: {
               title: input.title,
               description: input.description,
-              status: input.status ?? Prisma.ProjectStatus.PENDING, // Always sets to "TODO"
+              status: input.status ?? ProjectStatus.PENDING, // Always sets to "TODO"
               ownedBy: session?.user.id || null, // Set foreign key
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -56,7 +62,7 @@ export const projectRouter = createTRPCRouter({
           id: z.string().nonempty("Project ID is required"),
           title: z.string().min(1, "Title is required"),
           description: z.string(),
-          status:  z.string(Prisma.ProjectStatus).optional(),
+          status:  z.string().optional(),
           members: z.array(z.string()).optional(),
         })
       ).mutation(async ({ ctx, input }) => {
@@ -80,7 +86,6 @@ export const projectRouter = createTRPCRouter({
           ...projectData,
           updatedAt: new Date(),
         }
-        console.log("my data is ",data);
         // Update the project
         const updatedProject = await ctx.db.project.update({
           where: { id },
@@ -123,10 +128,11 @@ export const projectRouter = createTRPCRouter({
           },
         });
       
-        return projects.map((project) => ({
-          ...project,
-          teamMembers: project.teamMembers.map((teamMember) => teamMember.user),
-        }));
+        return projects;
+        // return projects.map((project) => ({
+        //   ...project,
+        //   teamMembers: project.teamMembers.map((teamMember) => teamMember.user),
+        // }));
       }),
       deleteProject: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
         const { db, session } = ctx;

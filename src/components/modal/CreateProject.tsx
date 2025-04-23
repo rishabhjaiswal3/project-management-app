@@ -2,13 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/utils/api";
 import AddMember from "../list/AddMember";
+import { type User } from "@/components/modal/User"; // Assuming you have a User interface defined in a separate file
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  image?: string;
-}
 
 interface CreateProjectProps {
   newProject: {

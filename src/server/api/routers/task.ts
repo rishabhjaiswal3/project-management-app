@@ -19,7 +19,7 @@ export const taskRouter = createTRPCRouter({
         projectId: z.string(),
         description: z.string(),
         tags: z.array(z.string()),
-        priority: z.enum(["LOW", "MED:IUM", "HIGH"]).optional(),
+        priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
         status: z.enum(Object.values(TaskStatus) as [TaskStatus, ...TaskStatus[]]).optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
@@ -45,14 +45,14 @@ export const taskRouter = createTRPCRouter({
   assignTaskToUser: protectedProcedure
     .input(
       z.object({
-        taskId: z.string(),
+        id: z.string(),
         userId: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.taskAndUser.create({
         data: {
-          taskId: input.taskId,
+          taskId: input.id,
           userId: input.userId,
         },
       });
@@ -61,7 +61,7 @@ export const taskRouter = createTRPCRouter({
   removeAssigneeFromTask: protectedProcedure
     .input(
       z.object({
-        taskId: z.string(),
+        id: z.string(),
         userId: z.string(),
       }),
     )
@@ -69,7 +69,7 @@ export const taskRouter = createTRPCRouter({
       return ctx.db.taskAndUser.delete({
         where: {
           taskId_userId: {
-            taskId: input.taskId,
+            taskId: input.id,
             userId: input.userId,
           },
         },
@@ -78,13 +78,13 @@ export const taskRouter = createTRPCRouter({
   getTaskById: protectedProcedure
     .input(
       z.object({
-        taskId: z.string(),
+        id: z.string(),
       }),
     )
     .query(async ({ ctx, input }) => {
       return ctx.db.task.findUnique({
         where: {
-          id: input.taskId,
+          id: input.id,
         },
       });
     }),
@@ -108,7 +108,7 @@ export const taskRouter = createTRPCRouter({
   updateTask: protectedProcedure
     .input(
       z.object({
-        taskId: z.string(),
+        id: z.string(),
         title: z.string().min(1),
         description: z.string(),
         tags: z.array(z.string()),
@@ -121,7 +121,7 @@ export const taskRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return ctx.db.task.update({
         where: {
-          id: input.taskId,
+          id: input.id,
         },
         data: {
           title: input.title,
@@ -138,13 +138,13 @@ export const taskRouter = createTRPCRouter({
   deleteTask: protectedProcedure
     .input(
       z.object({
-        taskId: z.string(),
+        id: z.string(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.task.delete({
         where: {
-          id: input.taskId,
+          id: input.id,
         },
       });
     }),
@@ -152,13 +152,13 @@ export const taskRouter = createTRPCRouter({
   getTasksByStatus: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
+        status: z.enum(["TODO", "INPROCESS", "COMPLETED"]),
       }),
     )
     .query(async ({ ctx, input }) => {
       return ctx.db.task.findMany({
         where: {
-          status: input.status,
+          status: input.status ?? "TODO",
         },
       });
     }),
