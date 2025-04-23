@@ -1,5 +1,5 @@
 import { ProjectStatus } from "@/components/modal/ProjectStatus";
-export interface ProjectProps {
+export default interface ProjectProps {
   id?: string;
   title: string; // Made title required
   description: string; // Made description required
@@ -7,9 +7,9 @@ export interface ProjectProps {
   teamMembers?: {
     user: {
       id: string;
-      name: string;
-      email: string;
-      image: string;
+      name?: string;
+      email?: string;
+      image?: string;
     };
   }[];
 }

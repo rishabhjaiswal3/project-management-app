@@ -1,5 +1,5 @@
 import React, { type FC } from "react";
-import { type ProjectProps } from "@/pages/interfaces/ProjectProps";
+import  type ProjectProps  from "@/pages/interfaces/ProjectProps";
 import type { ProjectStatus } from "../modal/ProjectStatus";
 
 interface projectItemProps {

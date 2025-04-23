@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import CreateProject from "@/components/modal/CreateProject";
 import ProjectCard from "@/components/card/ProjectCard";
 import AuthWrapper from "@/wrapper/AuthWrapper";
-import { type ProjectProps } from "@/pages/interfaces/ProjectProps";
+import type ProjectProps from "@/components/interfaces/ProjectProps";
 import { ProjectStatus } from "@/components/modal/ProjectStatus";
 import { type User } from "@/components/modal/User"; // Assuming you have a User interface defined in a separate file
 
@@ -49,7 +49,24 @@ export default function ProjectListPage() {
       (acc, project) => {
         if (!project.id) return acc;
         acc[project.id] = acc[project.id] ?? [];
-        acc[project.id]!.push({...project});
+        if (!project.status) {
+          project.status = ProjectStatus.PENDING; // Default status
+        }
+
+        const teamMembers = project?.teamMembers?.map((member) => ({
+          user: {
+            id: member.user.id,
+            name: member.user.name ?? "",
+            email: member.user.email ?? "",
+            image: member.user.image ?? "",
+          },
+        })) ?? [];
+
+        const status = Object.values(ProjectStatus).includes(project.status as ProjectStatus)
+        ? (project.status as ProjectStatus)
+        : ProjectStatus.PENDING;
+
+        acc[project.id]!.push({...project, status,teamMembers});
         return acc;
       },
       {} as Record<string, ProjectProps[]>,
@@ -71,8 +88,8 @@ export default function ProjectListPage() {
       setIsModalOpen(false);
     } catch (err) {
       if (err instanceof TRPCClientError) {
-        const { message, data } = err;
-        console.error("TRPC Error:", message, data);
+        // const { message, data } = err;
+        console.error("TRPC Error:", err);
       } else {
         console.error("Other error:", err);
       }
@@ -95,8 +112,7 @@ export default function ProjectListPage() {
       setIsModalOpen(false);
     } catch (err) {
       if (err instanceof TRPCClientError) {
-        const { message, data } = err;
-        console.error("TRPC Error:", message, data);
+        console.error("TRPC Error:", err);
       } else {
         console.error("Other error:", err);
       }
@@ -208,8 +224,8 @@ export default function ProjectListPage() {
                     <ProjectCard
                        project={{
                         ...project,
-                        status: Object.values(ProjectStatus).includes(project.status as ProjectStatus)
-                          ? (project.status as ProjectStatus)
+                        status: Object.values(ProjectStatus).includes(project.status)
+                          ? (project.status)
                           : ProjectStatus.PENDING, // Fallback to a default status if invalid
                         teamMembers: project?.teamMembers?.map((member) => ({
                           user: {

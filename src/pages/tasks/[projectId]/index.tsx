@@ -19,22 +19,22 @@ const Tasks: React.FC = () => {
   );
 
   const createTaskMutation = api.task.createTask.useMutation({
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
       setIsModalOpen(false);
     },
   });
 
   const updateTaskMutation = api.task.updateTask.useMutation({
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
       setIsModalOpen(false);
     },
   });
 
   const deleteTaskMutation = api.task.deleteTask.useMutation({
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
     },
   });
 
@@ -183,7 +183,7 @@ const TaskList: React.FC<{
               Edit
             </button>
             <button
-              onClick={() => onDelete(task.id!)}
+              onClick={() => onDelete(task.id)}
               className="rounded bg-red-500 px-3 py-1 text-white hover:bg-red-600"
             >
               Delete
