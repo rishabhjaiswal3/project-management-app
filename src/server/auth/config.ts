@@ -13,6 +13,7 @@ declare module "next-auth" {
 }
 
 export const authConfig = {
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
