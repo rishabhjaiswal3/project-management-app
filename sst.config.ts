@@ -1,40 +1,43 @@
-import * as sst from "sst";
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./.sst/platform/config.d.ts" />
 
-export default {
-  config(_input) {
+export default $config({
+  app(input) {
     return {
       name: "project-management-app",
-      region: "us-east-1",
+      removal: input?.stage === "production" ? "retain" : "remove",
+      protect: ["production"].includes(input?.stage),
+      home: "aws",
     };
   },
-  stacks(app) {
-    app.stack(async function Site({ stack }) {
-      // Create a VPC
-      const vpc = new sst.aws.Vpc(stack, "MyVpc");
-
-      // Create an ECS Cluster
-      const cluster = new sst.aws.Cluster(stack, "MyCluster", { vpc });
-
-      // Create an S3 Bucket for file uploads
-      const bucket = new sst.aws.Bucket(stack, "MyBucket", {
-        access: "public",
-      });
-
-      // Create a Fargate Service for the T3 Stack app
-      new sst.aws.Service(stack, "MyService", {
-        cluster,
-        loadBalancer: {
-          ports: [{ listen: "80/http", forward: "3000/http" }],
-        },
-        dev: {
-          command: "npm run dev",
-        },
-        link: [bucket], // Link the S3 bucket to the service
-      });
-
-      stack.addOutputs({
-        BucketName: bucket.bucketName,
-      });
+  async run() {
+    // Define a placeholder Supabase URL if needed
+    const placeholderSupabaseUrl = "https://project-management-app.supabase.co";
+    
+    // Create the Next.js app with environment variables matching your auth setup
+    const site = new sst.aws.Nextjs("MyWeb", {
+      next: {
+        typescript: true,
+      },
+      environment: {
+        // Database connection for Prisma
+        DATABASE_URL: process.env.DATABASE_URL || "",
+        
+        // NextAuth configuration
+        AUTH_SECRET: process.env.AUTH_SECRET || "",
+        NEXTAUTH_SECRET: process.env.AUTH_SECRET || "", // Ensure both variants are available
+        NEXTAUTH_URL: "${site.url}",
+        
+        // Optional Supabase connection
+        SUPABASE_URL: process.env.SUPABASE_URL || placeholderSupabaseUrl,
+        
+        // tRPC configuration
+        TRPC_PUBLIC_URL: "${site.url}/api/trpc",
+      },
     });
+    
+    return {
+      siteUrl: site.url,
+    };
   },
-} satisfies sst.SSTConfig;
+});
