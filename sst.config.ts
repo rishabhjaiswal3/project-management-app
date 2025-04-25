@@ -20,6 +20,7 @@ export default $config({
         typescript: true,
       },
       environment: {
+        NODE_OPTIONS: "--enable-source-maps",
         // Database connection for Prisma
         DATABASE_URL: process.env.DATABASE_URL || "",
         
