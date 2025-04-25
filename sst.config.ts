@@ -13,7 +13,7 @@ export default $config({
   async run() {
     // Define a placeholder Supabase URL if needed
     const placeholderSupabaseUrl = "https://project-management-app.supabase.co";
-    
+    const placeholdNEXT_AUTH_URL = "https://dlyh0ye5scm9o.cloudfront.net/";
     // Create the Next.js app with environment variables matching your auth setup
     const site = new sst.aws.Nextjs("MyWeb", {
       next: {
@@ -26,7 +26,7 @@ export default $config({
         // NextAuth configuration
         AUTH_SECRET: process.env.AUTH_SECRET || "",
         NEXTAUTH_SECRET: process.env.AUTH_SECRET || "", // Ensure both variants are available
-        NEXTAUTH_URL: "${site.url}",
+        NEXTAUTH_URL: "${site.url}" || placeholdNEXT_AUTH_URL,
         
         // Optional Supabase connection
         SUPABASE_URL: process.env.SUPABASE_URL || placeholderSupabaseUrl,
