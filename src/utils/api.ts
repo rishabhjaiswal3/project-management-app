@@ -44,13 +44,13 @@ export const api = createTRPCNext<AppRouter>({
            */
           transformer: superjson,
           url: `${getBaseUrl()}/api/trpc`,
-          headers: () => {
-            const headers = {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN ?? ""}`,
-            };
-            console.log("Client Headers:", headers); // Log headers for debugging
-            return headers;
-          },
+          // headers: () => {
+          //   const headers = {
+          //     Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN ?? ""}`,
+          //   };
+          //   console.log("Client Headers:", headers); // Log headers for debugging
+          //   return headers;
+          // },
         }),
       ],
     };

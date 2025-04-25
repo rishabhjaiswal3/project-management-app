@@ -39,6 +39,7 @@ interface CreateContextOptions {
  * @see https://create.t3.gg/en/usage/trpc#-serverapitrpcts
  */
 const createInnerTRPCContext = (opts: CreateContextOptions) => {
+  console.log("my create Context Options ",opts);
   return {
     session: opts.session,
     db,
@@ -53,11 +54,10 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  */
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts;
-  console.log("Incoming Headers:", req.headers); 
-
+  console.log("step 0")
   // Get the session from the server using the getServerSession wrapper function
   const session = await auth(req, res);
-
+  console.log("step 1")
   return createInnerTRPCContext({
     session,
   });
@@ -74,6 +74,8 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    console.log("shape is ",shape);
+    console.log("shaping Error While TRPCError:", error);
     return {
       ...shape,
       data: {
@@ -143,6 +145,7 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
+    console.log("running Protected Route");
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
