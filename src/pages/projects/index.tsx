@@ -15,19 +15,16 @@ export default function ProjectListPage() {
   const { data: projects, isLoading } = api.project.getAllProjects.useQuery();
   const createProjectMutation = api.project.createProject.useMutation({
     onSuccess: async () => {
-      // Invalidate the getAllProjects query to refetch data
       await utils.project.getAllProjects.invalidate();
     },
   });
   const updateProjectMutation = api.project.updateProject.useMutation({
     onSuccess: async () => {
-      // Invalidate the getAllProjects query to refetch data
       await utils.project.getAllProjects.invalidate();
     },
   });
   const deleteProjectMutation = api.project.deleteProject.useMutation({
     onSuccess: async () => {
-      // Invalidate the getAllProjects query to refetch data
       await utils.project.getAllProjects.invalidate();
     },
   });
@@ -50,7 +47,7 @@ export default function ProjectListPage() {
         if (!project.id) return acc;
         acc[project.id] = acc[project.id] ?? [];
         if (!project.status) {
-          project.status = ProjectStatus.PENDING; // Default status
+          project.status = ProjectStatus.PENDING; 
         }
 
         const teamMembers = project?.teamMembers?.map((member) => ({

@@ -26,15 +26,17 @@ export default $config({
         // NextAuth configuration
         AUTH_SECRET: process.env.AUTH_SECRET || "",
         NEXTAUTH_SECRET: process.env.AUTH_SECRET || "", // Ensure both variants are available
-        NEXTAUTH_URL: "${site.url}" || placeholdNEXT_AUTH_URL,
+        NEXTAUTH_URL: placeholdNEXT_AUTH_URL,
         
         // Optional Supabase connection
         SUPABASE_URL: process.env.SUPABASE_URL || placeholderSupabaseUrl,
         
         // tRPC configuration
-        TRPC_PUBLIC_URL: "${site.url}/api/trpc",
+        TRPC_PUBLIC_URL: `${placeholdNEXT_AUTH_URL}/api/trpc`,
       },
     });
+
+    console.log("site URL", site.url);
     
     return {
       siteUrl: site.url,
